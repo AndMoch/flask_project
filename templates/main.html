@@ -1,0 +1,15 @@
+{% extends base.html %}
+{% block content %}
+    <select class="sort-select">
+        <option class="option-item">По приоритету</option>
+        <option class="option-item">По дате выполнения</option>
+    </select>
+
+<script type=’text/javascript’>
+    jQuery(‘<strong>.sort-select</strong>’).each( function(){
+    jQuery(this).html( jQuery(this).find(‘option’).sort(function(a, b) {
+    return a.text == b.text ? 0 : a.text < b.text ? -1 : 1
+    }) );
+    });
+</script>
+{% endblock %}
