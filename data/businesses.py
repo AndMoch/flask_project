@@ -8,10 +8,10 @@ class Business(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
     title = sqlalchemy.Column(sqlalchemy.String)
+    priority = sqlalchemy.Column(sqlalchemy.Integer)
     start_date = sqlalchemy.Column(sqlalchemy.DateTime,
-                                      default=datetime.datetime.now)
+                                   default=datetime.datetime.now)
     end_date = sqlalchemy.Column(sqlalchemy.DateTime,
-                                      default=datetime.datetime.now)
-
+                                 default=datetime.datetime.now)
     user_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id"))
 

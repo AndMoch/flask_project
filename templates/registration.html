@@ -2,9 +2,10 @@
 
 {% block content %}
     <form action="" method="post">
+     {{ form.hidden_tag() }}
      <p>
         {{ form.login.label }}<br>
-        {{ form.login(class="form-control", type="email") }}<br>
+        {{ form.login(class="form-control") }}<br>
         {% for error in form.login.errors %}
             <p class="alert alert-danger" role="alert">
                 {{ error }}
@@ -47,6 +48,8 @@
             </p>
         {% endfor %}
     </p>
+    <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
     <a class="navbar-brand" href="/login">Уже зарегистрированы? Авторизуйтесь.</a>
+    {{message}}
     </form>
 {% endblock %}

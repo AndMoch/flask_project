@@ -1,15 +1,56 @@
-{% extends base.html %}
+{% extends "base.html" %}
 {% block content %}
+<div>
+    <p class="navbar-brand" >{{ current_user.name }} {{ current_user.surname }} <a href="/logout" class="btn btn-danger">Выйти</a></p>
+</div>
+<div>
+    <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
+</div>
     <select class="sort-select">
         <option class="option-item">По приоритету</option>
         <option class="option-item">По дате выполнения</option>
     </select>
-
-<script type=’text/javascript’>
-    jQuery(‘<strong>.sort-select</strong>’).each( function(){
-    jQuery(this).html( jQuery(this).find(‘option’).sort(function(a, b) {
-    return a.text == b.text ? 0 : a.text < b.text ? -1 : 1
-    }) );
-    });
-</script>
+            <ul class="list-group">
+            {% for business in businesses %}
+                <li class="list-group-item">{{business.title}}</li>
+                <li class="list-group-item">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Приоритет</th>
+                          <th scope="col">Дата начала</th>
+                          <th scope="col">Дата окончания</th>
+                          <th scope="col">Статус задачи</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          {% if business.priority == 1%}
+                            <td>Наименьшая</td>
+                          {% elif business.priority == 2 %}
+                            <td>Средняя</td>
+                          {% elif business.priority == 3 %}
+                            <td>Наибольшая</td>
+                          {% endif %}
+                          <td>{{business.start_date}}</td>
+                          <td>{{business.end_date}}</td>
+                          {% if business.end_date <= cur_time %}
+                            <td>Срок выполнения истёк</td>
+                          {% else%}
+                            <td>В процессе выполнения</td>
+                          {% endif %}
+                        </tr>
+                      </tbody>
+                    </table>
+                </li>
+            <div>
+                <a href="/redact_business/{{ business.id }}" class="btn btn-warning">
+                    Изменить
+                </a>
+                <a href="/delete_business/{{ business.id }}" class="btn btn-danger">
+                    Удалить
+                </a>
+            </div>
+            {% endfor %}
+            </ul>
 {% endblock %}
