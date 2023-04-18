@@ -3,15 +3,28 @@
 <div>
     <p class="navbar-brand" >{{ current_user.name }} {{ current_user.surname }} <a href="/logout" class="btn btn-danger">Выйти</a></p>
 </div>
+
 <div>
-    <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
+    <ul>
+        <li><a href="/categories">Категории</a></li>
+    </ul>
 </div>
-    <select class="sort-select">
-        <option class="option-item">По приоритету</option>
-        <option class="option-item">По дате выполнения</option>
-    </select>
-            <ul class="list-group">
-            {% for business in businesses %}
+    <ul class="list-group">
+        {% if url_for(request.endpoint) == "/"%}
+            <div>
+                <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
+            </div>
+                <span>Категории</span>
+                <div>
+                    <ul>
+                        <li><a type="button" class="btn btn-primary" href="/">Все задачи</a></li>
+                        {% for category in categories %}
+                        <li><a type="button" class="btn btn-secondary" href="/index/{{category.title}}">{{category.title}}</a></li>
+                        {% endfor %}
+                    </ul>
+                    </div>
+                </div>
+                {% for business in businesses %}
                 <li class="list-group-item">{{business.title}}</li>
                 <li class="list-group-item">
                     <table class="table">
@@ -21,6 +34,7 @@
                           <th scope="col">Дата начала</th>
                           <th scope="col">Дата окончания</th>
                           <th scope="col">Статус задачи</th>
+                          <th scope="col">Категория</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -30,7 +44,7 @@
                           {% elif business.priority == 2 %}
                             <td>Средняя</td>
                           {% elif business.priority == 3 %}
-                            <td>Наибольшая</td>
+                            <td>business.priority</td>
                           {% endif %}
                           <td>{{business.start_date}}</td>
                           <td>{{business.end_date}}</td>
@@ -39,18 +53,26 @@
                           {% else%}
                             <td>В процессе выполнения</td>
                           {% endif %}
+                          {% if business.category%}
+                            <td>{{business.category.title}}</td>
+                          {% else %}
+                            <td>Без категории</td>
+                          {% endif %}
                         </tr>
                       </tbody>
                     </table>
                 </li>
-            <div>
-                <a href="/redact_business/{{ business.id }}" class="btn btn-warning">
-                    Изменить
-                </a>
-                <a href="/delete_business/{{ business.id }}" class="btn btn-danger">
-                    Удалить
-                </a>
-            </div>
-            {% endfor %}
+                <div>
+                    <a href="/redact_business/{{ business.id }}" class="btn btn-warning">
+                        Изменить
+                    </a>
+                    <a href="/delete_business/{{ business.id }}" class="btn btn-danger">
+                        Удалить
+                    </a>
+                </div>
+                {% endfor %}
+            {% elif businesses == []%}
+                <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
+            {% endif %}
             </ul>
 {% endblock %}
