@@ -15,15 +15,20 @@
                 <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
             </div>
                 <span>Категории</span>
-                <div>
-                    <ul>
-                        <li><a type="button" class="btn btn-primary" href="/">Все задачи</a></li>
-                        {% for category in categories %}
-                        <li><a type="button" class="btn btn-secondary" href="/index/{{category.title}}">{{category.title}}</a></li>
-                        {% endfor %}
-                    </ul>
-                    </div>
-                </div>
+                <select class="select">
+                    <option value="/">Все задачи</option>
+                    {% for category in categories %}
+                        <option value="/index/{{category.title}}">{{category.title}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <script>
+            $(document).ready(function(){
+	            $('.select').change(function(){
+		            window.location.href = $(this).val();
+	            });
+            });
+            </script>
                 {% for business in businesses %}
                 <li class="list-group-item">{{business.title}}</li>
                 <li class="list-group-item">
