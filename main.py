@@ -9,10 +9,12 @@ from forms.registrationform import RegisterForm
 from forms.addbusinessform import AddBusinessForm
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from dotenv import dotenv_values
+from flask_restful import Api
 from forms.redactbusinessform import RedactBusinessForm
 import datetime
 
 app = Flask(__name__)
+api = Api(app)
 app.config['SECRET_KEY'] = dotenv_values('.env')['SECRET_KEY']
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -28,7 +30,20 @@ def status_update(end_date: datetime.datetime):
     if cur_time >= end_date:
         return "Срок выполнения истёк"
     delta = end_date - cur_time
-
+    if delta >= datetime.timedelta(days=365):
+        return "Больше года на выполнение"
+    elif datetime.timedelta(days=62) < delta < datetime.timedelta(days=365):
+        return f"Около {delta.days // 30} месяцев на выполнение"
+    elif datetime.timedelta(days=28) < delta <= datetime.timedelta(days=62):
+        return "Около месяца на выполнение"
+    elif delta <= datetime.timedelta(days=28):
+        return "Меньше месяца на выполнение"
+    elif datetime.timedelta(days=2) < delta <= datetime.timedelta(days=7):
+        return f"{delta.days} дней на выполнение"
+    elif datetime.timedelta(hours=1) < delta <= datetime.timedelta(days=1):
+        return "День на выполнение"
+    elif delta < datetime.timedelta(hours=1):
+        return "Меньше часа на выполнение"
 
 
 @login_manager.user_loader
@@ -43,13 +58,11 @@ def index():
         db_sess = db_session.create_session()
         businesses = []
         for business in db_sess.query(Business).filter(Business.user_id == current_user.id):
-            # business.status = status_update(business.end_date)
-            # db_sess.commit()
+            business.status = status_update(business.end_date)
+            db_sess.commit()
             businesses.append(business)
         categories = [category for category in db_sess.query(Category).filter(Category.user_id == current_user.id)]
-        cur_time = datetime.datetime.now()
-        return render_template('main.html', title='Главная страница', businesses=businesses, categories=categories,
-                               cur_time=cur_time)
+        return render_template('main.html', title='Главная страница', businesses=businesses, categories=categories)
     else:
         return redirect('/registration')
 
@@ -60,12 +73,11 @@ def index_category(category_title):
         db_sess = db_session.create_session()
         businesses = []
         category = db_sess.query(Category).filter(Category.title == category_title).first()
-        cur_time = datetime.datetime.now()
         for business in db_sess.query(Business).filter(Business.category_id == category.id):
-            # business.status = status_update(business.end_date)
-            # db_sess.commit()
+            business.status = status_update(business.end_date)
+            db_sess.commit()
             businesses.append(business)
-        return render_template('index_categories.html', title='Главная страница', businesses=businesses, cur_time=cur_time)
+        return render_template('index_categories.html', title='Главная страница', businesses=businesses)
     else:
         return redirect('/registration')
 
@@ -133,7 +145,8 @@ def add_job():
             category_id=form.category.data,
             start_date=form.start_date.data,
             end_date=form.end_date.data,
-            user_id=current_user.id
+            user_id=current_user.id,
+            status=status_update(form.end_date.data)
         )
         db_sess.add(business)
         db_sess.commit()
@@ -150,8 +163,9 @@ def redact_business(id):
         business = db_sess.query(Business).filter(Business.id == id).first()
         if business:
             form.title.data = business.title
-            form.priority.data = business.work_size
+            form.priority.data = business.priority
             form.end_date.data = business.end_date
+            form.category.data = business.category_id
         else:
             abort(404)
     if form.validate_on_submit():
@@ -160,21 +174,23 @@ def redact_business(id):
         if business:
             if db_sess.query(Business).filter(Business.title == form.title.data,
                                               Business.title != business.title).first():
-                return render_template('add_business.html', title='Добавление задачи',
+                return render_template('redact_business.html', title='Добавление задачи',
                                        form=form,
                                        message="Такая задача уже есть")
-            if business.start_time >= form.end_date.data:
-                return render_template('add_business.html', title='Добавление задачи',
+            if business.start_date >= form.end_date.data:
+                return render_template('redact_business.html', title='Добавление задачи',
                                        form=form,
                                        message="Время начала позже или равно времени окончания задачи")
             business.title = form.title.data
             business.priority = form.priority.data
             business.end_date = form.end_date.data
+            business.status = status_update(form.end_date.data)
+            business.category_id = form.category.data
             db_sess.commit()
             return redirect('/')
         else:
             abort(404)
-    return render_template('add_business.html', title='Редактирование работы', form=form)
+    return render_template('redact_business.html', title='Редактирование работы', form=form)
 
 
 @app.route('/delete_business/<int:id>', methods=['GET', 'POST'])
@@ -182,8 +198,8 @@ def redact_business(id):
 def delete_business(id):
     db_sess = db_session.create_session()
     business = db_sess.query(Business).filter(Business.id == id,
-                                         Business.user_id == current_user.id
-                                         ).first()
+                                              Business.user_id == current_user.id
+                                              ).first()
     if business:
         db_sess.delete(business)
         db_sess.commit()
@@ -252,7 +268,6 @@ def delete_category(id):
     else:
         abort(404)
     return redirect('/')
-
 
 
 @app.route('/login', methods=['GET', 'POST'])

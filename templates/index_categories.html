@@ -6,29 +6,25 @@
 
 <div>
     <ul>
+        <li><a href="/">Задачи</a></li>
         <li><a href="/categories">Категории</a></li>
     </ul>
 </div>
     <ul class="list-group">
-        {% if url_for(request.endpoint) == "/"%}
+        {% if businesses != [] %}
             <div>
                 <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
             </div>
                 <span>Категории</span>
-                <select class="select">
-                    <option value="/">Все задачи</option>
-                    {% for category in categories %}
-                        <option value="/index/{{category.title}}">{{category.title}}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <script>
-            $(document).ready(function(){
-	            $('.select').change(function(){
-		            window.location.href = $(this).val();
-	            });
-            });
-            </script>
+                <div>
+                    <ul>
+                        <li><a type="button" class="btn btn-primary" href="/">Все задачи</a></li>
+                        {% for category in categories %}
+                        <li><a type="button" class="btn btn-secondary" href="/index/{{category.title}}">{{category.title}}</a></li>
+                        {% endfor %}
+                    </ul>
+                    </div>
+                </div>
                 {% for business in businesses %}
                 <li class="list-group-item">{{business.title}}</li>
                 <li class="list-group-item">
@@ -39,7 +35,6 @@
                           <th scope="col">Дата начала</th>
                           <th scope="col">Дата окончания</th>
                           <th scope="col">Статус задачи</th>
-                          <th scope="col">Категория</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -54,11 +49,6 @@
                           <td>{{business.start_date}}</td>
                           <td>{{business.end_date}}</td>
                           <td>{{business.status}}</td>
-                          {% if business.category%}
-                            <td>{{business.category.title}}</td>
-                          {% else %}
-                            <td>Без категории</td>
-                          {% endif %}
                         </tr>
                       </tbody>
                     </table>
@@ -74,6 +64,15 @@
                 {% endfor %}
             {% elif businesses == []%}
                 <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
+                <div>
+                    <ul>
+                        <li><a type="button" class="btn btn-primary" href="/">Все задачи</a></li>
+                        {% for category in categories %}
+                        <li><a type="button" class="btn btn-secondary" href="/index/{{category.title}}">{{category.title}}</a></li>
+                        {% endfor %}
+                    </ul>
+                    </div>
+                </div>
             {% endif %}
             </ul>
 {% endblock %}

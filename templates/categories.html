@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div>
+    <p class="navbar-brand" >{{ current_user.name }} {{ current_user.surname }} <a href="/logout" class="btn btn-danger">Выйти</a></p>
+</div>
+
+<div>
+    <ul>
+        <li><a href="/">Задачи</a></li>
+    </ul>
+</div>
+<h1>Категории <a href="/add_category" class="btn btn-primary">Добавить категорию</a></h1>
+    <ul class="list-group">
+        {% if categories %}
+            {% for category in categories %}
+                <li class="list-group-item">{{category.title}}<div>
+                    <a href="/redact_category/{{ category.id }}" class="btn btn-warning">
+                        Переименовать
+                    </a>
+                    <a href="/delete_category/{{ category.id }}" class="btn btn-danger">
+                        Удалить
+                    </a>
+                </div></li>
+            {% endfor %}
+        {% endif %}
+        </ul>
+{% endblock %}
