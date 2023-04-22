@@ -22,7 +22,7 @@ login_manager.init_app(app)
 
 def main():
     db_session.global_init("db/todo_list.db")
-    app.run(debug=True)
+    app.run(port=8080, debug=True)
 
 
 def status_update(end_date: datetime.datetime):
@@ -129,7 +129,8 @@ def add_job():
                                    form=form,
                                    message="Не указана продолжительность задачи")
         db_sess = db_session.create_session()
-        if db_sess.query(Business).filter(Business.title == form.title.data).first():
+        if db_sess.query(Business).filter(Business.title == form.title.data,
+                                          Business.user_id == current_user.id).first():
             return render_template('add_business.html', title='Добавление задачи',
                                    form=form,
                                    message="Такая задача уже есть")
@@ -173,7 +174,8 @@ def redact_business(id):
         business = db_sess.query(Business).filter(Business.id == id).first()
         if business:
             if db_sess.query(Business).filter(Business.title == form.title.data,
-                                              Business.title != business.title).first():
+                                              Business.title != business.title,
+                                              Business.user_id == current_user.id).first():
                 return render_template('redact_business.html', title='Добавление задачи',
                                        form=form,
                                        message="Такая задача уже есть")
@@ -213,7 +215,8 @@ def add_category():
     form = AddCategoryForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        if db_sess.query(Category).filter(Category.title == form.title.data).first():
+        if db_sess.query(Category).filter(Category.title == form.title.data,
+                                          Category.user_id == current_user.id).first():
             return render_template('add_business.html', title='Добавление задачи',
                                    form=form,
                                    message="Категория с таким именем уже есть")
@@ -243,7 +246,8 @@ def redact_category(id):
         category = db_sess.query(Category).filter(Category.id == id).first()
         if category:
             if db_sess.query(Category).filter(Category.title == form.title.data,
-                                              Category.title != category.title).first():
+                                              Category.title != category.title,
+                                              Category.user_id == current_user.id).first():
                 return render_template('add_category.html', title='Изменение категории',
                                        form=form,
                                        message="Такая категория уже есть")
