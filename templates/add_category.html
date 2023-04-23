@@ -2,7 +2,7 @@
 
 {% block content %}
 <h1>{{ title }}</h1>
-<form action="" method="post">
+<form action="" method="post" >
     {{ form.hidden_tag() }}
     <p>
         {{ form.title.label }}<br>
@@ -13,7 +13,10 @@
             </p>
         {% endfor %}
     </p>
+    <div>
     <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    <a href="/categories" class="btn btn-danger">Отмена</a>
+    </div>
     {{message}}
 </form>
 {% endblock %}

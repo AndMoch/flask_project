@@ -36,14 +36,22 @@ def status_update(end_date: datetime.datetime):
         return f"Около {delta.days // 30} месяцев на выполнение"
     elif datetime.timedelta(days=28) < delta <= datetime.timedelta(days=62):
         return "Около месяца на выполнение"
-    elif delta <= datetime.timedelta(days=28):
-        return "Меньше месяца на выполнение"
-    elif datetime.timedelta(days=2) < delta <= datetime.timedelta(days=7):
+    elif datetime.timedelta(days=14) < delta <= datetime.timedelta(days=28):
+        return f"{delta.days // 7} недели на выполнение"
+    elif datetime.timedelta(days=1) < delta <= datetime.timedelta(days=14):
         return f"{delta.days} дней на выполнение"
-    elif datetime.timedelta(hours=1) < delta <= datetime.timedelta(days=1):
+    elif datetime.timedelta(hours=12) < delta <= datetime.timedelta(days=1):
         return "День на выполнение"
-    elif delta < datetime.timedelta(hours=1):
+    elif datetime.timedelta(hours=1) < delta <= datetime.timedelta(hours=12):
+        return f"{delta.seconds // 3600} часов на выполнение"
+    elif datetime.timedelta(minutes=30) < delta <= datetime.timedelta(hours=1):
         return "Меньше часа на выполнение"
+    elif datetime.timedelta(minutes=5) < delta <= datetime.timedelta(minutes=30):
+        return f"{delta.seconds // 60} минут на выполнение"
+    elif datetime.timedelta(minutes=1) < delta <= datetime.timedelta(minutes=5):
+        return f"{delta.seconds // 60} минуты на выполнение"
+    elif delta <= datetime.timedelta(minutes=1):
+        return "Меньше минуты на выполнение"
 
 
 @login_manager.user_loader
@@ -121,25 +129,36 @@ def reqistration():
 
 @app.route('/add_business', methods=['GET', 'POST'])
 @login_required
-def add_job():
+def add_business():
     form = AddBusinessForm()
+    db_sess = db_session.create_session()
+    cur_time = datetime.datetime.strftime(datetime.datetime.now(), format('%Y-%m-%dT%H:%M'))
+    categories = [(None, "Без категории")]
+    categories.extend([(category.id, category.title)
+                       for category in db_sess.query(Category).filter(Category.user_id == current_user.id)])
+    form.category.choices = categories
+    form.end_date.default = datetime.datetime.now()
+    form.start_date.default = datetime.datetime.now()
     if form.validate_on_submit():
         if not form.end_date.data or not form.start_date.data:
             return render_template('add_business.html', title='Добавление задачи',
                                    form=form,
-                                   message="Не указана продолжительность задачи")
+                                   message="Не указана продолжительность задачи",
+                                   cur_time=cur_time)
         db_sess = db_session.create_session()
         if db_sess.query(Business).filter(Business.title == form.title.data,
                                           Business.user_id == current_user.id).first():
             return render_template('add_business.html', title='Добавление задачи',
                                    form=form,
-                                   message="Такая задача уже есть")
+                                   message="Такая задача уже есть",
+                                   cur_time=cur_time)
         start_time = form.start_date.data
         end_time = form.end_date.data
         if start_time >= end_time:
             return render_template('add_business.html', title='Добавление задачи',
                                    form=form,
-                                   message="Время начала позже или равно времени окончания задачи")
+                                   message="Время начала позже или равно времени окончания задачи",
+                                   cur_time=cur_time)
         business = Business(
             title=form.title.data,
             priority=form.priority.data,
@@ -152,13 +171,19 @@ def add_job():
         db_sess.add(business)
         db_sess.commit()
         return redirect('/')
-    return render_template('add_business.html', title='Добавление работы', form=form)
+    return render_template('add_business.html', title='Добавление задачи', form=form, cur_time=cur_time)
 
 
 @app.route('/redact_business/<int:id>', methods=['GET', 'POST'])
 @login_required
 def redact_business(id):
     form = RedactBusinessForm()
+    db_sess = db_session.create_session()
+    categories = [(None, "Без категории")]
+    categories.extend([(category.id, category.title)
+                       for category in db_sess.query(Category).filter(Category.user_id == current_user.id)])
+    form.category.choices = categories
+    form.end_date.default = datetime.datetime.now()
     if request.method == "GET":
         db_sess = db_session.create_session()
         business = db_sess.query(Business).filter(Business.id == id).first()
@@ -178,11 +203,13 @@ def redact_business(id):
                                               Business.user_id == current_user.id).first():
                 return render_template('redact_business.html', title='Добавление задачи',
                                        form=form,
-                                       message="Такая задача уже есть")
+                                       message="Такая задача уже есть",
+                                       categories=categories)
             if business.start_date >= form.end_date.data:
                 return render_template('redact_business.html', title='Добавление задачи',
                                        form=form,
-                                       message="Время начала позже или равно времени окончания задачи")
+                                       message="Время начала позже или равно времени окончания задачи",
+                                       categories=categories)
             business.title = form.title.data
             business.priority = form.priority.data
             business.end_date = form.end_date.data
@@ -192,7 +219,8 @@ def redact_business(id):
             return redirect('/')
         else:
             abort(404)
-    return render_template('redact_business.html', title='Редактирование работы', form=form)
+    return render_template('redact_business.html', title='Редактирование работы', form=form,
+                           categories=categories)
 
 
 @app.route('/delete_business/<int:id>', methods=['GET', 'POST'])
@@ -217,7 +245,7 @@ def add_category():
         db_sess = db_session.create_session()
         if db_sess.query(Category).filter(Category.title == form.title.data,
                                           Category.user_id == current_user.id).first():
-            return render_template('add_business.html', title='Добавление задачи',
+            return render_template('add_category.html', title='Добавление задачи',
                                    form=form,
                                    message="Категория с таким именем уже есть")
         category = Category(
@@ -264,8 +292,7 @@ def redact_category(id):
 def delete_category(id):
     db_sess = db_session.create_session()
     category = db_sess.query(Category).filter(Category.id == id,
-                                              Category.user_id == current_user.id
-                                              ).first()
+                                              Category.user_id == current_user.id).first()
     if category:
         db_sess.delete(category)
         db_sess.commit()
