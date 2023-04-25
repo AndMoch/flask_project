@@ -38,7 +38,7 @@ def password_check(password):
         return True, 'В пароле должна быть хотя бы одна буква нижнего регистра'
     if any(char in SPEC_SYMS for char in password):
         return True, f'В пароле не должны присутствовать символы из списка: {SPEC_SYMS}'
-    return False
+    return False, "ОК"
 
 
 def status_update(end_date: datetime.datetime):
@@ -164,8 +164,6 @@ def add_business():
     categories.extend([(category.id, category.title)
                        for category in db_sess.query(Category).filter(Category.user_id == current_user.id)])
     form.category.choices = categories
-    form.end_date.data = datetime.datetime.now()
-    form.start_date.data = datetime.datetime.now()
     if form.validate_on_submit():
         if not form.end_date.data or not form.start_date.data:
             return render_template('add_business.html', title='Добавление задачи',
