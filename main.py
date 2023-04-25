@@ -19,10 +19,26 @@ app.config['SECRET_KEY'] = dotenv_values('.env')['SECRET_KEY']
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+SPEC_SYMS = r"[ !#$%&'()*+,-./[\\\]^_`{|}~" + r'"]'
+
 
 def main():
     db_session.global_init("db/todo_list.db")
     app.run(port=8080, debug=True)
+
+
+def password_check(password):
+    if 8 > len(password) or 20 < len(password):
+        return True, 'Длина пароля должна находится в диапазоне от 8 до 20 символов'
+    if not any(char.isdigit() for char in password):
+        return True, 'В пароле должна быть хотя бы одна цифра'
+    if not any(char.isupper() for char in password):
+        return True, 'В пароле должна быть хотя бы одна буква верхнего регистра'
+    if not any(char.islower() for char in password):
+        return True, 'В пароле должна быть хотя бы одна буква нижнего регистра'
+    if any(char in SPEC_SYMS for char in password):
+        return True, f'В пароле не должны присутствовать символы из списка: {SPEC_SYMS}'
+    return False
 
 
 def status_update(end_date: datetime.datetime):
@@ -46,9 +62,15 @@ def status_update(end_date: datetime.datetime):
         return f"{delta.seconds // 3600} часов на выполнение"
     elif datetime.timedelta(minutes=30) < delta <= datetime.timedelta(hours=1):
         return "Меньше часа на выполнение"
-    elif datetime.timedelta(minutes=5) < delta <= datetime.timedelta(minutes=30):
+    elif datetime.timedelta(minutes=24) < delta <= datetime.timedelta(minutes=30):
         return f"{delta.seconds // 60} минут на выполнение"
-    elif datetime.timedelta(minutes=1) < delta <= datetime.timedelta(minutes=5):
+    elif datetime.timedelta(minutes=21) < delta <= datetime.timedelta(minutes=24):
+        return f"{delta.seconds // 60} минуты на выполнение"
+    elif datetime.timedelta(minutes=20) < delta <= datetime.timedelta(minutes=21):
+        return f"21 минута на выполнение"
+    elif datetime.timedelta(minutes=5) < delta <= datetime.timedelta(minutes=20):
+        return f"{delta.seconds // 60} минут на выполнение"
+    elif datetime.timedelta(minutes=1) < delta < datetime.timedelta(minutes=5):
         return f"{delta.seconds // 60} минуты на выполнение"
     elif delta <= datetime.timedelta(minutes=1):
         return "Меньше минуты на выполнение"
@@ -106,6 +128,11 @@ def index_categories():
 def reqistration():
     form = RegisterForm()
     if form.validate_on_submit():
+        pass_tup = password_check(form.password.data)
+        if pass_tup[0]:
+            return render_template('registration.html', title='Регистрация',
+                                   form=form,
+                                   message=pass_tup[-1])
         if form.password.data != form.password_again.data:
             return render_template('registration.html', title='Регистрация',
                                    form=form,
@@ -137,8 +164,8 @@ def add_business():
     categories.extend([(category.id, category.title)
                        for category in db_sess.query(Category).filter(Category.user_id == current_user.id)])
     form.category.choices = categories
-    form.end_date.default = datetime.datetime.now()
-    form.start_date.default = datetime.datetime.now()
+    form.end_date.data = datetime.datetime.now()
+    form.start_date.data = datetime.datetime.now()
     if form.validate_on_submit():
         if not form.end_date.data or not form.start_date.data:
             return render_template('add_business.html', title='Добавление задачи',

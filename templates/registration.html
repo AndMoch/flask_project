@@ -1,9 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <form action="" method="post">
+    <link rel="stylesheet" href="{{url_for('.static', filename='/css/form.css', _scheme='https')}}">
+    <h1>Регистрация</h1>
+    <form action="" method="post" class="form_universal">
+
      {{ form.hidden_tag() }}
      <p>
+
         {{ form.login.label }}<br>
         {{ form.login(class="form-control") }}<br>
         {% for error in form.login.errors %}
@@ -52,4 +56,5 @@
     <a class="navbar-brand" href="/login">Уже зарегистрированы? Авторизуйтесь!</a>
     {{message}}
     </form>
+
 {% endblock %}
