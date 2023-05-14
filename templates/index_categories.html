@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div>
-    <p class="navbar-brand" >{{ current_user.name }} {{ current_user.surname }} <a href="/logout" class="btn btn-danger">Выйти</a></p>
+    <p class="navbar-brand" >{{ current_user.login }}<a href="/logout" class="btn btn-danger">Выйти</a></p>
 </div>
 
 <div>

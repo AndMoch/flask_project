@@ -33,9 +33,10 @@
             </p>
         {% endfor %}
     </p>
+    <a href="/add_category_while_business_adding" class="btn btn-primary">Создать категорию</a>
     <p>
         {{ form.end_date.label }}<br>
-        {{ form.end_date(class="form-control", type="datetime-local" }}<br>
+        {{ form.end_date(class="form-control", type="datetime-local", **{"min": cur_time}) }}<br>
         {% for error in form.end_date.errors %}
             <p class="alert alert-danger" role="alert">
                 {{ error }}

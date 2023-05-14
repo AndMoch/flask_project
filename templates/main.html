@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
+<link rel="stylesheet" href="{{url_for('.static', filename='css/context_menu.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/context_menu.css', _scheme='http')}}">
 <div>
-    <p class="navbar-brand" >{{ current_user.name }} {{ current_user.surname }} <a href="/logout" class="btn btn-danger">Выйти</a></p>
+    <p class="navbar-brand" >{{ current_user.login }} <a href="/logout" class="btn btn-danger">Выйти</a></p>
 </div>
 
 <div>
@@ -9,7 +11,6 @@
         <li><a href="/categories">Категории</a></li>
     </ul>
 </div>
-    <ul class="list-group">
         {% if url_for(request.endpoint) == "/"%}
             <div>
                 <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
@@ -29,7 +30,9 @@
 	            });
             });
             </script>
+        <ul class="list-group">
                 {% for business in businesses %}
+                <div class="task" data-id="{{business.id}}">
                 <li class="list-group-item">{{business.title}}</li>
                 <li class="list-group-item">
                     <table class="table">
@@ -62,7 +65,7 @@
                         </tr>
                       </tbody>
                     </table>
-                </li>
+                </li></div>
                 <div>
                     <a href="/redact_business/{{ business.id }}" class="btn btn-warning">
                         Изменить
@@ -76,4 +79,20 @@
                 <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
             {% endif %}
             </ul>
+    <nav id="context-menu" class="context-menu">
+        <ul class="context-menu__items" id="context-menu__items">
+            <li class="context-menu__item">
+            <a href="#" class="context-menu__link" data-action="View"><i class="fa fa-eye"></i>Отметить как выполненную</a>
+      </li>
+      <li class="context-menu__item">
+        <a href="#" class="context-menu__link" data-action="redact_business"><i class="fa fa-edit"></i>Изменить</a>
+      </li>
+      <li class="context-menu__item">
+        <a href="#" class="context-menu__link" data-action="delete_business"><i class="fa fa-times"></i>Удалить</a>
+      </li>
+    </ul>
+  </nav>
+    <script src="{{url_for('.static', filename='js/context_menu.js', _scheme='https')}}"></script>
+<script src="{{url_for('.static', filename='js/context_menu.js', _scheme='http')}}"></script>
+
 {% endblock %}

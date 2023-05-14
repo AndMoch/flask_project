@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-<link rel="stylesheet" href="{{url_for('.static', filename='/css/form.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/form.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/form.css', _scheme='http')}}">
 <h1>Авторизация</h1>
- <form action="" method="post" class="form_universal">
+<form action="" method="post" class="form_universal">
         {{ form.hidden_tag() }}
         <p>
             {{ form.login.label }}<br>
@@ -27,5 +28,6 @@
         <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
         <div>{{ message }}</div>
         <a class="navbar-brand" href="/registration">Зарегистрироваться</a>
+        <a class="navbar-brand" href="/request_for_password_reset">Забыли пароль?</a>
  </form>
 {% endblock %}

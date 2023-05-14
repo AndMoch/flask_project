@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-<link rel="stylesheet" href="{{url_for('.static', filename='/css/form.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/form.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/context_menu.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/context_menu.css', _scheme='http')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/form.css', _scheme='http')}}">
 <h1>{{ title }}</h1>
 <form action="" method="post" class="form_universal">
     {{ form.hidden_tag() }}
@@ -32,6 +35,7 @@
             </p>
         {% endfor %}
     </p>
+    <a href="/add_category_while_business_adding" class="btn btn-primary">Создать категорию</a>
     <p>
         {{ form.start_date.label }}<br>
         {{ form.start_date(class="form-control", type="datetime-local", **{"min": cur_time}) }}<br>

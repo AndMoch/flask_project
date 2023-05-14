@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, request, abort, url_for
+from flask import Flask, render_template, redirect, request, abort, url_for, flash
 from data import db_session
 from data.categories import Category
 from data.users import User
@@ -8,16 +8,27 @@ from forms.loginform import LoginForm
 from forms.registrationform import RegisterForm
 from forms.addbusinessform import AddBusinessForm
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_mail import Mail, Message
 from dotenv import dotenv_values
-from flask_restful import Api
 from forms.redactbusinessform import RedactBusinessForm
 import datetime
 
+from forms.resetpasswordform import ResetPasswordForm
+from forms.setnewpasswordform import SetNewPasswordForm
+
 app = Flask(__name__)
-api = Api(app)
 app.config['SECRET_KEY'] = dotenv_values('.env')['SECRET_KEY']
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'todolistbyandmoch@gmail.com'
+app.config['MAIL_DEFAULT_SENDER'] = 'todolistbyandmoch@gmail.com'
+app.config['MAIL_PASSWORD'] = dotenv_values('.env')['MAIL_PASSWORD']
+mail = Mail(app)
+
 login_manager = LoginManager()
 login_manager.init_app(app)
+
 
 SPEC_SYMS = r"[ !#$%&'()*+,-./[\\\]^_`{|}~" + r'"]'
 
@@ -25,6 +36,12 @@ SPEC_SYMS = r"[ !#$%&'()*+,-./[\\\]^_`{|}~" + r'"]'
 def main():
     db_session.global_init("db/todo_list.db")
     app.run(port=8080, debug=True)
+
+
+def send_reset_email(recipient, token, user):
+    msg = Message(subject='Сброс пароля в Todo List', recipients=recipient,
+                  html=render_template('reset_password_email.html', token=token, user=user))
+    mail.send(msg)
 
 
 def password_check(password):
@@ -142,16 +159,78 @@ def reqistration():
             return render_template('registration.html', title='Регистрация',
                                    form=form,
                                    message="Такой пользователь уже есть")
+        if db_sess.query(User).filter(User.email == form.email.data).first():
+            return render_template('registration.html', title='Регистрация',
+                                   form=form,
+                                   message="Почта уже занята")
         user = User(
             login=form.login.data,
-            surname=form.surname.data,
-            name=form.name.data
+            email=form.email.data
         )
         user.set_password(form.password.data)
         db_sess.add(user)
         db_sess.commit()
         return redirect('/login')
     return render_template('registration.html', title='Регистрация', form=form)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter((User.login == form.login.data) | (User.email == form.login.data)).first()
+        if user and user.check_password(form.password.data):
+            login_user(user, remember=form.remember_me.data)
+            return redirect("/")
+        return render_template('login.html',
+                               message="Неправильный логин или пароль",
+                               form=form)
+    return render_template('login.html', title='Авторизация', form=form)
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect("/")
+
+
+@app.route('/request_for_password_reset', methods=['GET', 'POST'])
+def request_for_password_reset():
+    if current_user.is_authenticated:
+        return redirect('/')
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter(User.email == form.email.data).first()
+        if user:
+            token = user.get_reset_password_token()
+            send_reset_email([user.email], token, user)
+        else:
+            return render_template('reset_password.html',
+                                   title='Сброс пароля', form=form, message='Пользователя с такой почтой не существует')
+        flash('На вашу почту отправлено письмо с ссылкой для сброса пароля')
+        return redirect('/login')
+    return render_template('reset_password.html',
+                           title='Сброс пароля', form=form)
+
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect('/')
+    user_id = User.verify_reset_password_token(token)
+    db_sess = db_session.create_session()
+    user = db_sess.query(User).filter(User.id == user_id).first()
+    if not user:
+        return redirect('/')
+    form = SetNewPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db_sess.commit()
+        return redirect('/login')
+    return render_template('set_new_password.html', form=form)
 
 
 @app.route('/add_business', methods=['GET', 'POST'])
@@ -283,6 +362,46 @@ def add_category():
     return render_template('add_category.html', title='Добавление категории', form=form)
 
 
+@app.route('/add_category_while_business_adding', methods=['GET', 'POST'])
+def add_category_while_business_adding():
+    form = AddCategoryForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        if db_sess.query(Category).filter(Category.title == form.title.data,
+                                          Category.user_id == current_user.id).first():
+            return render_template('add_category.html', title='Добавление задачи',
+                                   form=form,
+                                   message="Категория с таким именем уже есть")
+        category = Category(
+            title=form.title.data,
+            user_id=current_user.id
+        )
+        db_sess.add(category)
+        db_sess.commit()
+        return redirect('/add_business')
+    return render_template('add_category.html', title='Добавление категории', form=form)
+
+
+@app.route('/add_category_while_business_redacting', methods=['GET', 'POST'])
+def add_category_while_business_redacting():
+    form = AddCategoryForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        if db_sess.query(Category).filter(Category.title == form.title.data,
+                                          Category.user_id == current_user.id).first():
+            return render_template('add_category.html', title='Добавление задачи',
+                                   form=form,
+                                   message="Категория с таким именем уже есть")
+        category = Category(
+            title=form.title.data,
+            user_id=current_user.id
+        )
+        db_sess.add(category)
+        db_sess.commit()
+        return redirect('/redact_business')
+    return render_template('add_category.html', title='Добавление категории', form=form)
+
+
 @app.route('/redact_category/<int:id>', methods=['GET', 'POST'])
 @login_required
 def redact_category(id):
@@ -306,7 +425,7 @@ def redact_category(id):
                                        message="Такая категория уже есть")
             category.title = form.title.data
             db_sess.commit()
-            return redirect('/')
+            return redirect('/categories')
         else:
             abort(404)
     return render_template('add_category.html', title='Изменение категории', form=form)
@@ -323,29 +442,8 @@ def delete_category(id):
         db_sess.commit()
     else:
         abort(404)
-    return redirect('/')
+    return redirect('/categories')
 
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        db_sess = db_session.create_session()
-        user = db_sess.query(User).filter(User.login == form.login.data).first()
-        if user and user.check_password(form.password.data):
-            login_user(user, remember=form.remember_me.data)
-            return redirect("/")
-        return render_template('login.html',
-                               message="Неправильный логин или пароль",
-                               form=form)
-    return render_template('login.html', title='Авторизация', form=form)
-
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect("/")
 
 
 if __name__ == '__main__':
