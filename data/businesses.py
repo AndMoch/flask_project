@@ -12,6 +12,7 @@ class Business(SqlAlchemyBase, SerializerMixin):
     title = sqlalchemy.Column(sqlalchemy.String)
     priority = sqlalchemy.Column(sqlalchemy.Integer)
     status = sqlalchemy.Column(sqlalchemy.String)
+    ended_by_user = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     start_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                    default=datetime.datetime.now)
     end_date = sqlalchemy.Column(sqlalchemy.DateTime,

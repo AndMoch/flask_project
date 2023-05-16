@@ -15,6 +15,7 @@
     <ul class="list-group">
         {% if categories %}
             {% for category in categories %}
+                <div class="task" data-id="{{category.id}}">
                 <li class="list-group-item">{{category.title}}<div>
                     <a href="/redact_category/{{ category.id }}" class="btn btn-warning">
                         Переименовать
@@ -22,7 +23,7 @@
                     <a href="/delete_category/{{ category.id }}" class="btn btn-danger">
                         Удалить
                     </a>
-                </div></li>
+                </div></li></div>
             {% endfor %}
         {% endif %}
         </ul>

@@ -11,15 +11,14 @@
         <li><a href="/categories">Категории</a></li>
     </ul>
 </div>
-        {% if url_for(request.endpoint) == "/"%}
-            <div>
-                <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
-            </div>
+    <div>
+          <h1>Оконченные задачи</h1>
+    </div>
                 <span>Категории</span>
                 <select class="select">
+                    <option value="/ended_businesses">Оконченные задачи</option>
                     <option value="/">Все задачи</option>
                     <option value="/current_businesses">Текущие задачи</option>
-                    <option value="/ended_businesses">Оконченные задачи</option>
                     {% for category in categories %}
                         <option value="/index/{{category.title}}">{{category.title}}</option>
                     {% endfor %}
@@ -34,7 +33,7 @@
             </script>
         <ul class="list-group">
                 {% for business in businesses %}
-                <div class="task" data-id="{{business.id}}" data-status="{{business.status}}">
+                <div class="task" data-id="{{business.id}}" data-endbyuser="{{business.ended_by_user}}" data-status="{{business.status}}">
                 <li class="list-group-item">{{business.title}}</li>
                 <li class="list-group-item">
                     <table class="table">
@@ -45,9 +44,6 @@
                           <th scope="col">Дата окончания</th>
                           <th scope="col">Статус задачи</th>
                           <th scope="col">Категория</th>
-                          <th scope="col"><a href="/redact_business/{{ business.id }}" class="btn btn-warning">
-                        Изменить
-                    </a></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -67,29 +63,25 @@
                           {% else %}
                             <td>Без категории</td>
                           {% endif %}
-                            <td><a href="/delete_business/{{ business.id }}" class="btn btn-danger">
-                        Удалить
-                    </a></td>
                         </tr>
                       </tbody>
                     </table>
+                <a href="/delete_business/{{ business.id }}" class="btn btn-danger">
+                        Удалить
+                    </a>
                 </li></div>
                 {% endfor %}
-            {% elif businesses == []%}
-                <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
-            {% endif %}
             </ul>
     <nav id="context-menu" class="context-menu">
         <ul class="context-menu__items" id="context-menu__items">
-      <li class="context-menu__item">
-        <a href="#" class="context-menu__link" data-action="redact_business"><i class="fa fa-edit"></i>Изменить</a>
-      </li>
+            <li class="context-menu__item">
+            <a href="#" class="context-menu__link" data-action="enable_business"><i class="fa fa-eye"></i>Возобновить задачу</a>
+            </li>
       <li class="context-menu__item">
         <a href="#" class="context-menu__link" data-action="delete_business"><i class="fa fa-times"></i>Удалить</a>
       </li>
     </ul>
   </nav>
-    <script src="{{url_for('.static', filename='js/context_menu.js', _scheme='https')}}"></script>
-<script src="{{url_for('.static', filename='js/context_menu.js', _scheme='http')}}"></script>
-
+  <script src="{{url_for('.static', filename='js/context_menu.js', _scheme='https')}}"></script>
+  <script src="{{url_for('.static', filename='js/context_menu.js', _scheme='http')}}"></script>
 {% endblock %}

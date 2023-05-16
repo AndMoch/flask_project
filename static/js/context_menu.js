@@ -218,8 +218,11 @@
      */
     function menuItemListener( link ) {
       console.log( "Task ID - " + taskItemInContext.getAttribute("data-id") + ", Task action - " + link.getAttribute("data-action"));
+      if (taskItemInContext.getAttribute("data-status") == "Срок выполнения истёк" && (link.getAttribute("data-action") == "enable_business" || link.getAttribute("data-action") == "disable_business")){
+          alert("Срок выполнения задачи истёк")}
+      else{
       window.location.href = "/" + link.getAttribute("data-action") + "/" + taskItemInContext.getAttribute("data-id");
-      toggleMenuOff();
+      toggleMenuOff();}
     }
   
     /**

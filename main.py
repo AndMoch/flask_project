@@ -1,3 +1,4 @@
+from celery import Celery
 from flask import Flask, render_template, redirect, request, abort, url_for, flash
 from data import db_session
 from data.categories import Category
@@ -7,16 +8,19 @@ from forms.addcategoryform import AddCategoryForm
 from forms.loginform import LoginForm
 from forms.registrationform import RegisterForm
 from forms.addbusinessform import AddBusinessForm
+from forms.resetpasswordform import ResetPasswordForm
+from forms.setnewpasswordform import SetNewPasswordForm
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_mail import Mail, Message
 from dotenv import dotenv_values
 from forms.redactbusinessform import RedactBusinessForm
 import datetime
 
-from forms.resetpasswordform import ResetPasswordForm
-from forms.setnewpasswordform import SetNewPasswordForm
 
 app = Flask(__name__)
+# app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(
+#     days=365
+# )
 app.config['SECRET_KEY'] = dotenv_values('.env')['SECRET_KEY']
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -24,6 +28,7 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'todolistbyandmoch@gmail.com'
 app.config['MAIL_DEFAULT_SENDER'] = 'todolistbyandmoch@gmail.com'
 app.config['MAIL_PASSWORD'] = dotenv_values('.env')['MAIL_PASSWORD']
+# celery = Celery(app.name, broker=dotenv_values('.env')['BROKER'], backend=dotenv_values('.env')['BACKEND'])
 mail = Mail(app)
 
 login_manager = LoginManager()
@@ -42,6 +47,13 @@ def send_reset_email(recipient, token, user):
     msg = Message(subject='Сброс пароля в Todo List', recipients=recipient,
                   html=render_template('reset_password_email.html', token=token, user=user))
     mail.send(msg)
+
+
+# @celery.task
+# def send_notification_email(subject, recipient, user, business, status):
+#     msg = Message(subject=subject, recipients=recipient,
+#                   html=render_template('notification_email.html', user=user, business=business, status=status))
+#     mail.send(msg)
 
 
 def password_check(password):
@@ -71,24 +83,30 @@ def status_update(end_date: datetime.datetime):
         return "Около месяца на выполнение"
     elif datetime.timedelta(days=14) < delta <= datetime.timedelta(days=28):
         return f"{delta.days // 7} недели на выполнение"
-    elif datetime.timedelta(days=1) < delta <= datetime.timedelta(days=14):
+    elif datetime.timedelta(days=5) < delta <= datetime.timedelta(days=14):
         return f"{delta.days} дней на выполнение"
+    elif datetime.timedelta(days=2) < delta <= datetime.timedelta(days=4):
+        return f"{delta.days} дня на выполнение"
     elif datetime.timedelta(hours=12) < delta <= datetime.timedelta(days=1):
         return "День на выполнение"
-    elif datetime.timedelta(hours=1) < delta <= datetime.timedelta(hours=12):
+    elif datetime.timedelta(hours=5) < delta <= datetime.timedelta(hours=12):
         return f"{delta.seconds // 3600} часов на выполнение"
+    elif datetime.timedelta(hours=2) < delta <= datetime.timedelta(hours=4):
+        return f"{delta.seconds // 3600} часа на выполнение"
     elif datetime.timedelta(minutes=30) < delta <= datetime.timedelta(hours=1):
         return "Меньше часа на выполнение"
     elif datetime.timedelta(minutes=24) < delta <= datetime.timedelta(minutes=30):
         return f"{delta.seconds // 60} минут на выполнение"
-    elif datetime.timedelta(minutes=21) < delta <= datetime.timedelta(minutes=24):
+    elif datetime.timedelta(minutes=22) < delta <= datetime.timedelta(minutes=24):
         return f"{delta.seconds // 60} минуты на выполнение"
     elif datetime.timedelta(minutes=20) < delta <= datetime.timedelta(minutes=21):
         return f"21 минута на выполнение"
     elif datetime.timedelta(minutes=5) < delta <= datetime.timedelta(minutes=20):
         return f"{delta.seconds // 60} минут на выполнение"
-    elif datetime.timedelta(minutes=1) < delta < datetime.timedelta(minutes=5):
+    elif datetime.timedelta(minutes=2) < delta <= datetime.timedelta(minutes=5):
         return f"{delta.seconds // 60} минуты на выполнение"
+    elif datetime.timedelta(minutes=1) < delta <= datetime.timedelta(minutes=2):
+        return "2 минуты на выполнение"
     elif delta <= datetime.timedelta(minutes=1):
         return "Меньше минуты на выполнение"
 
@@ -124,7 +142,39 @@ def index_category(category_title):
             business.status = status_update(business.end_date)
             db_sess.commit()
             businesses.append(business)
-        return render_template('index_categories.html', title='Главная страница', businesses=businesses)
+        return render_template('index_categories.html', title=f'Задачи категории {category_title}',
+                               businesses=businesses)
+    else:
+        return redirect('/registration')
+
+
+@app.route("/ended_businesses", methods=['GET', 'POST'])
+def ended_businesses():
+    if current_user.is_authenticated:
+        db_sess = db_session.create_session()
+        businesses = []
+        for business in db_sess.query(Business).filter((Business.status == 'Срок выполнения истёк')
+                                                       | Business.ended_by_user):
+            business.status = status_update(business.end_date)
+            db_sess.commit()
+            businesses.append(business)
+        return render_template('ended_businesses.html', title='Оконченные задачи', businesses=businesses)
+    else:
+        return redirect('/registration')
+
+
+@app.route("/current_businesses", methods=['GET', 'POST'])
+def current_businesses():
+    if current_user.is_authenticated:
+        db_sess = db_session.create_session()
+        businesses = []
+        for business in db_sess.query(Business).filter(Business.status != 'Срок выполнения истёк',
+                                                       Business.ended_by_user != True):
+            business.status = status_update(business.end_date)
+            db_sess.commit()
+            if business.status != "Срок выполнения истёк":
+                businesses.append(business)
+        return render_template('current_businesses.html', title='Текущие задачи', businesses=businesses)
     else:
         return redirect('/registration')
 
@@ -327,6 +377,36 @@ def redact_business(id):
                            categories=categories)
 
 
+@app.route('/disable_business/<int:id>', methods=['GET', 'POST'])
+@login_required
+def disable_business(id):
+    db_sess = db_session.create_session()
+    business = db_sess.query(Business).filter(Business.id == id,
+                                              Business.user_id == current_user.id
+                                              ).first()
+    if business:
+        business.ended_by_user = True
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/')
+
+
+@app.route('/enable_business/<int:id>', methods=['GET', 'POST'])
+@login_required
+def enable_business(id):
+    db_sess = db_session.create_session()
+    business = db_sess.query(Business).filter(Business.id == id,
+                                              Business.user_id == current_user.id
+                                              ).first()
+    if business:
+        business.ended_by_user = False
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/')
+
+
 @app.route('/delete_business/<int:id>', methods=['GET', 'POST'])
 @login_required
 def delete_business(id):
@@ -443,7 +523,6 @@ def delete_category(id):
     else:
         abort(404)
     return redirect('/categories')
-
 
 
 if __name__ == '__main__':
