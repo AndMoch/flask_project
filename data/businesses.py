@@ -21,4 +21,3 @@ class Business(SqlAlchemyBase, SerializerMixin):
     category_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("categories.id"), nullable=True)
     user = orm.relationship('User')
     category = orm.relationship('Category')
-

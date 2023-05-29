@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="{{url_for('.static', filename='css/user_settings.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/user_settings.css', _scheme='http')}}">
+<h1>Настройки</h1>
+<div class="tab">
+  <button class="tablinks" onclick="openTab(event, 'Уведомления')">Уведомления</button>
+  <button class="tablinks" onclick="openTab(event, 'Взаимодействие')">Взаимодействие</button>
+</div>
+<form action="" method="post">
+        {{ form.hidden_tag() }}
+        <div id="Уведомления" class="tabcontent">
+        <p>
+            <p>{{ form.email_checkbox() }} {{ form.email_checkbox.label }}</p>
+        </p>
+        </div>
+        <div id="Взаимодействие" class="tabcontent">
+        <p>
+            {{ form.usage_variants.label }}<br>
+            {{ form.usage_variants() }}<br>
+            {% for error in form.usage_variants.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        </div>
+        <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+        <div>{{ message }}</div>
+ </form>
+    <script>function openTab(evt, name) {
+  var i, tabcontent, tablinks;
+
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+
+  document.getElementById(name).style.display = "block";
+  evt.currentTarget.className += " active";
+}</script>
+{% endblock %}

@@ -6,6 +6,7 @@ from .db_session import SqlAlchemyBase
 
 class Category(SqlAlchemyBase, SerializerMixin):
     __tablename__ = 'categories'
+    __mapper_args__ = {'confirm_deleted_rows': False}
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
     title = sqlalchemy.Column(sqlalchemy.String)

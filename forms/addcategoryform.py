@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms import TextAreaField, SubmitField
+from wtforms.validators import DataRequired, Length
 
 
 class AddCategoryForm(FlaskForm):
-    title = StringField("Название", validators=[DataRequired()])
+    title = TextAreaField("Название", validators=[DataRequired(), Length(max=255)])
     submit = SubmitField('Назвать')

@@ -1,44 +1,75 @@
 {% extends "base.html" %}
 {% block content %}
+<link rel="stylesheet" href="{{url_for('.static', filename='css/context_menu.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/context_menu.css', _scheme='http')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/main.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/main.css', _scheme='http')}}">
+    <header>
+        <div>
+        <span class="back-button"><a class="btn btn-secondary" href="/categories">Категории</a></span>
+        <div class="div-login">
+        <span class="navbar-brand" style="color: #f5f5f5; text-align: right;" >{{ current_user.login }} <a href="/logout" class="btn btn-danger" title="Выйти"><i class="fa fa-sign-out" aria-hidden="true"></i></a>
+            <a href="/user_settings" class="btn btn-primary" title="Настройки"><i class="fa fa-cog" aria-hidden="true"></i></a></span></div></div>
+    </header>
+                <h1>{{category.title}} <a href="/add_business?sender=index {{category.title}}" class="btn btn-primary">Добавить задачу</a></h1>
 <div>
-    <p class="navbar-brand" >{{ current_user.login }}<a href="/logout" class="btn btn-danger">Выйти</a></p>
-</div>
-
-<div>
-    <ul>
-        <li><a href="/">Задачи</a></li>
-        <li><a href="/categories">Категории</a></li>
-    </ul>
-</div>
-    <ul class="list-group">
-        {% if businesses != [] %}
-            <div>
-                <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
-            </div>
                 <span>Категории</span>
-                <div>
-                    <ul>
-                        <li><a type="button" class="btn btn-primary" href="/">Все задачи</a></li>
-                        {% for category in categories %}
-                        <li><a type="button" class="btn btn-secondary" href="/index/{{category.title}}">{{category.title}}</a></li>
-                        {% endfor %}
-                    </ul>
-                    </div>
-                </div>
-                {% for business in businesses %}
-                <li class="list-group-item">{{business.title}}</li>
-                <li class="list-group-item">
+                <select class="select" data-cat="{{category.title}}">
+                    <option value="/">Все задачи</option>
+                    <option value="/current_businesses">Текущие задачи</option>
+                    <option value="/ended_businesses">Оконченные задачи</option>
+                    {% for cat in categories %}
+                        <option value="/index/{{cat.title}}">{{cat.title}}</option>
+                    {% endfor %}
+                </select></div>
+                            <script>
+            $(".select").val("/index/" + $(".select").attr("data-cat"));
+            $(document).ready(function(){
+	            $('.select').change(function(){
+		            window.location.href = $(this).val();
+	            });
+            });
+            </script><div>
+                <span>Сортировать по</span>
+                <select class="selectSortParam" data-selected="{{param}}" data-cat="{{category.title}}">
+                    <option value="id"> ряду добавления </option>
+                    <option value="title">алфавиту</option>
+                    <option value="start_date">дате начала</option>
+                    <option value="end_date">дате окончания</option>
+                    <option value="priority">важности</option>
+                </select>
+                <span> в порядке </span>
+                <select class="selectSortOrder" data-selected="{{order}}">
+                    <option value="desc">убывания</option>
+                    <option value="asc">возрастания</option>
+                </select></div>
+            <script>
+                $(".selectSortParam").val($(".selectSortParam").attr("data-selected"));
+                $(".selectSortOrder").val($(".selectSortOrder").attr("data-selected"));
+                $(document).ready(function(){
+	            $(".selectSortParam, .selectSortOrder").change(function(){
+		            window.location.href = "/index/" + $(".selectSortParam").attr("data-cat") + "?param=" + $(".selectSortParam").val() + "&order=" + $(".selectSortOrder").val();
+	            });
+            });
+            </script>
                     <table class="table">
                       <thead>
                         <tr>
+                          <th scope="col">Описание</th>
                           <th scope="col">Приоритет</th>
                           <th scope="col">Дата начала</th>
                           <th scope="col">Дата окончания</th>
-                          <th scope="col">Статус задачи</th>
+                          <th scope="col">Выполнена</th>
+                          {% if current_user.buttons_enabled%}
+                        <th scope="col">Действия</th>
+                      {% endif %}
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
+                      {% for business in businesses %}
+                        <tr class="task" data-id="{{business.id}}" data-sender="index_{{category.title}}" data-status="{{business.status}}" data-end="{% if business.ended_by_user %} 1 {% else %} 0 {% endif %}"
+                        style="{% if business.status == 'Срок выполнения истёк' %} background: #ff9999; {% elif business.ended_by_user %} background: #76ff7a; {% else %} background: #faf74d; {% endif %}">
+                          <td class="title" >{{business.title}}</td>
                           {% if business.priority == 1%}
                             <td>Наименьшая</td>
                           {% elif business.priority == 2 %}
@@ -48,31 +79,39 @@
                           {% endif %}
                           <td>{{business.start_date}}</td>
                           <td>{{business.end_date}}</td>
-                          <td>{{business.status}}</td>
+                          {% if business.ended_by_user%}
+                            <td>Да</td>
+                          {% else %}
+                            <td>Нет</td>
+                          {% endif %}
+                          {% if current_user.buttons_enabled%}
+                            <td><a href="/redact_business/{{ business.id }}?sender=index_{{category.title}}" class="btn btn-warning" title="Изменить"><i class="fa fa-pencil-square-o" aria-hidden="true"></i></a>
+                                <a href="/delete_business/{{ business.id }}?sender=index_{{category.title}}" class="btn btn-danger" title="Удалить"><i class="fa fa-trash" aria-hidden="true"></i></a>
+                                {% if business.ended_by_user %}
+                                <a href="/enable_business/{{ business.id }}?sender=index_{{category.title}}" class="btn btn-primary" title="Возобновить"><i class="fa fa-refresh" aria-hidden="true"></i></a>
+                                {% else %}
+                                <a href="/disable_business/{{ business.id }}?sender=index_{{category.title}}" class="btn btn-success" title="Отметить как выполненную"><i class="fa fa-check" aria-hidden="true"></i></a>
+                                {% endif %}</td>
+                            {% endif %}
                         </tr>
+                      {% endfor %}
                       </tbody>
                     </table>
-                </li>
-                <div>
-                    <a href="/redact_business/{{ business.id }}" class="btn btn-warning">
-                        Изменить
-                    </a>
-                    <a href="/delete_business/{{ business.id }}" class="btn btn-danger">
-                        Удалить
-                    </a>
-                </div>
-                {% endfor %}
-            {% elif businesses == []%}
-                <h1>Задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
-                <div>
-                    <ul>
-                        <li><a type="button" class="btn btn-primary" href="/">Все задачи</a></li>
-                        {% for category in categories %}
-                        <li><a type="button" class="btn btn-secondary" href="/index/{{category.title}}">{{category.title}}</a></li>
-                        {% endfor %}
-                    </ul>
-                    </div>
-                </div>
-            {% endif %}
-            </ul>
+{% if current_user.context_menu_enabled %}
+    <nav id="context-menu" class="context-menu">
+        <ul class="context-menu__items" id="context-menu__items">
+            <li class="context-menu__item">
+                <a id="endOrNot" class="context-menu__link" data-action=""></a>
+        </li>
+      <li class="context-menu__item">
+        <a  class="context-menu__link" data-action="redact_business">Изменить</a>
+      </li>
+      <li class="context-menu__item">
+        <a class="context-menu__link" data-action="delete_business">Удалить</a>
+      </li>
+    </ul>
+  </nav>
+    <script src="{{url_for('.static', filename='js/context_menu_main.js', _scheme='https')}}"></script>
+<script src="{{url_for('.static', filename='js/context_menu_main.js', _scheme='http')}}"></script>
+{% endif %}
 {% endblock %}

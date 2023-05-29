@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{url_for('.static', filename='css/category_form.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/category_form.css', _scheme='http')}}">
+<h1>{{title}}</h1>
+<form action="" method="post" class="form_universal">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.title.label }}<br>
+        {{ form.title(class="form-control") }}<br>
+        {% for error in form.title.errors %}
+            <p class="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+    <div>
+    <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    <a href="/{{sender}}" class="btn btn-danger">Отмена</a>
+    </div>
+    {{message}}
+</form>
+{% endblock %}

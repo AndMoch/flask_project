@@ -34,7 +34,7 @@
             </p>
         {% endfor %}
     </p>
-    <a href="/add_category_while_business_adding" class="btn btn-primary">Создать категорию</a>
+    <a href="/add_category_while_business_adding?sender=redact_business-{{id}}" class="btn btn-primary">Создать категорию</a>
     <p>
         {{ form.end_date.label }}<br>
         {{ form.end_date(class="form-control", type="datetime-local", **{"min": cur_time}) }}<br>

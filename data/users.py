@@ -6,7 +6,6 @@ from flask_login import UserMixin
 from sqlalchemy import orm
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy_serializer import SerializerMixin
-from .db_session import create_session
 import jwt
 from dotenv import dotenv_values
 from .db_session import SqlAlchemyBase
@@ -23,6 +22,9 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     hashed_password = sqlalchemy.Column(sqlalchemy.String)
     modified_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                       default=datetime.datetime.now)
+    context_menu_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
+    buttons_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
+    notifications_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     businesses = orm.relationship("Business", back_populates="user")
     categories = orm.relationship("Category", back_populates="user")
 
@@ -42,7 +44,6 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
         try:
             user_id = jwt.decode(token, dotenv_values('.env')['SECRET_KEY'],
                                  algorithms=['HS256'])['reset_password']
-            print(user_id)
         except:
             return
         return user_id

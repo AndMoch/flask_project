@@ -2,18 +2,18 @@
 {% block content %}
 <link rel="stylesheet" href="{{url_for('.static', filename='css/context_menu.css', _scheme='https')}}">
 <link rel="stylesheet" href="{{url_for('.static', filename='css/context_menu.css', _scheme='http')}}">
-<div>
-    <p class="navbar-brand" >{{ current_user.login }} <a href="/logout" class="btn btn-danger">Выйти</a></p>
-</div>
-
-<div>
-    <ul>
-        <li><a href="/categories">Категории</a></li>
-    </ul>
-</div>
+<link rel="stylesheet" href="{{url_for('.static', filename='css/main.css', _scheme='https')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/main.css', _scheme='http')}}">
+    <header>
+        <div>
+        <span class="back-button"><a class="btn btn-secondary" href="/categories">Категории</a></span>
+        <div class="div-login">
+        <span class="navbar-brand" style="color: #f5f5f5; text-align: right;" >{{ current_user.login }} <a href="/logout" class="btn btn-danger" title="Выйти"><i class="fa fa-sign-out" aria-hidden="true"></i></a>
+            <a href="/user_settings" class="btn btn-primary" title="Настройки"><i class="fa fa-cog" aria-hidden="true"></i></a></span></div></div>
+    </header>
             <div>
-                <h1>Текущие задачи <a href="/add_business" class="btn btn-primary">Добавить задачу</a></h1>
-            </div>
+                <h1>Текущие задачи <a href="/add_business?sender=current_businesses" class="btn btn-primary">Добавить задачу</a></h1>
+            </div><div>
                 <span>Категории</span>
                 <select class="select">
                     <option value="/current_businesses">Текущие задачи</option>
@@ -31,26 +31,49 @@
 	            });
             });
             </script>
-        <ul class="list-group">
-                {% for business in businesses %}
-                <div class="task" data-id="{{business.id}}" data-status="{{business.status}}">
-                <li class="list-group-item">{{business.title}}</li>
-                <li class="list-group-item">
+                <div>
+                <span>Сортировать по</span>
+                <select class="selectSortParam" data-selected="{{param}}">
+                    <option value="id"> ряду добавления </option>
+                    <option value="title">алфавиту</option>
+                    <option value="start_date">дате начала</option>
+                    <option value="end_date">дате окончания</option>
+                    <option value="priority">важности</option>
+                </select>
+                <span> в порядке </span>
+                <select class="selectSortOrder" data-selected="{{order}}">
+                    <option value="desc">убывания</option>
+                    <option value="asc">возрастания</option>
+                </select>
+                    </div>
+            <script>
+                $(".selectSortParam").val($(".selectSortParam").attr("data-selected"));
+                $(".selectSortOrder").val($(".selectSortOrder").attr("data-selected"));
+                $(document).ready(function(){
+	            $(".selectSortParam, .selectSortOrder").change(function(){
+		            window.location.href = "/current_businesses" + "?param=" + $(".selectSortParam").val() + "&order=" + $(".selectSortOrder").val();
+	            });
+            });
+            </script>
                     <table class="table">
                       <thead>
                         <tr>
+                          <th scope="col">Описание</th>
                           <th scope="col">Приоритет</th>
                           <th scope="col">Дата начала</th>
                           <th scope="col">Дата окончания</th>
-                          <th scope="col">Статус задачи</th>
+                          <th scope="col">Выполнена</th>
                           <th scope="col">Категория</th>
-                          <th scope="col"><a href="/redact_business/{{ business.id }}" class="btn btn-warning">
-                        Изменить
-                    </a></th>
+                          {% if current_user.buttons_enabled%}
+                        <th scope="col">Действия</th>
+                      {% endif %}
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
+                      {% for business in businesses %}
+                        <tr class="task" data-id="{{business.id}}" data-sender="current_businesses" data-status="{{business.status}}"
+                        style="{% if business.status == 'Срок выполнения истёк' %} background: #ff9999; {% elif business.ended_by_user %} background: #76ff7a; {% else %} background: #faf74d; {% endif %}">
+                          <td class="title">{{business.title}}</td>
                           {% if business.priority == 1%}
                             <td>Наименьшая</td>
                           {% elif business.priority == 2 %}
@@ -60,35 +83,40 @@
                           {% endif %}
                           <td>{{business.start_date}}</td>
                           <td>{{business.end_date}}</td>
-                          <td>{{business.status}}</td>
+                            {% if business.ended_by_user%}
+                            <td>Да</td>
+                          {% else %}
+                            <td>Нет</td>
+                          {% endif %}
                           {% if business.category%}
-                            <td>{{business.category.title}}</td>
+                            <td class="title" >{{business.category.title}}</td>
                           {% else %}
                             <td>Без категории</td>
                           {% endif %}
-                            <td><a href="/delete_business/{{ business.id }}" class="btn btn-danger">
-                        Удалить
-                    </a></td>
+                            {% if current_user.buttons_enabled%}
+                            <td><a href="/redact_business/{{ business.id }}?sender=current_businesses" class="btn btn-warning" title="Изменить"><i class="fa fa-pencil-square-o" aria-hidden="true"></i></a>
+                                <a href="/delete_business/{{ business.id }}?sender=current_businesses" class="btn btn-danger" title="Удалить"><i class="fa fa-trash" aria-hidden="true"></i></a>
+                                <a href="/disable_business/{{ business.id }}?sender=current_businesses" class="btn btn-success" title="Отметить как выполненную"><i class="fa fa-check" aria-hidden="true"></i></a>
+                            {% endif %}
                         </tr>
+                      {% endfor %}
                       </tbody>
                     </table>
-                </li></div>
-                {% endfor %}
-            </ul>
+{% if current_user.context_menu_enabled %}
     <nav id="context-menu" class="context-menu">
         <ul class="context-menu__items" id="context-menu__items">
             <li class="context-menu__item">
-            <a href="#" class="context-menu__link" data-action="disable_business"><i class="fa fa-eye"></i>Отметить как выполненную</a>
+            <a  class="context-menu__link" data-action="disable_business">Отметить как выполненную</a>
       </li>
       <li class="context-menu__item">
-        <a href="#" class="context-menu__link" data-action="redact_business"><i class="fa fa-edit"></i>Изменить</a>
+        <a  class="context-menu__link" data-action="redact_business">Изменить</a>
       </li>
       <li class="context-menu__item">
-        <a href="#" class="context-menu__link" data-action="delete_business"><i class="fa fa-times"></i>Удалить</a>
+        <a class="context-menu__link" data-action="delete_business">Удалить</a>
       </li>
     </ul>
   </nav>
     <script src="{{url_for('.static', filename='js/context_menu.js', _scheme='https')}}"></script>
 <script src="{{url_for('.static', filename='js/context_menu.js', _scheme='http')}}"></script>
-
+{% endif %}
 {% endblock %}

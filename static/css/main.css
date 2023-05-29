@@ -1,0 +1,33 @@
+header{
+	width: 100%;
+	background: #282828;
+	height: 70px;
+}
+.back-button{
+    padding-top: 10px;
+    padding-right: 10px;
+    position:absolute;
+}
+.div-login{
+    text-align: right;
+    padding-top: 10px
+}
+.title{
+    max-width:200px;
+    word-wrap:break-word;}
+.table {
+	width: 100%;
+	margin-bottom: 20px;
+	border: 1px solid #000000;
+	border-collapse: collapse;
+}
+.table th {
+	font-weight: bold;
+	padding: 5px;
+	background: #d1d5de;
+	border: 1px solid #000000;
+}
+.table td {
+	border: 1px solid #000000;
+	padding: 5px;
+}
